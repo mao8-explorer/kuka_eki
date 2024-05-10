@@ -1,0 +1,9 @@
+&ACCESS RVP
+&REL 21
+&PARAM DISKPATH = KRC:\R1\Program\q1
+defdat kuka_eki_hw_interface
+   ext bas(bas_command  :in,real  :in )
+
+   Decl E6AXIS XHOME={A1 -90.00, A2 -90.00, A3 90.00, A4 0.00, A5 0.00, A6 0.00, E1 10,E2 0.0,E3 0.0,E4 0.0,E5 0.0,E6 0.0}
+
+enddat

@@ -1,5 +1,6 @@
 &ACCESS RVP
 &REL 64
+&PARAM DISKPATH = KRC:\R1\program\q1
 def  ros_eki()
   ;fold Software License Agreement (BSD License)
   ;
@@ -71,23 +72,26 @@ def  ros_eki()
 
   ; BCO (Block COincidence) run to current position
   ; (requied for below loop continue before first incoming command)
-  ptp joint_pos_tgt
+   PTP XHOME
+   XHOME = $axis_act_meas
+   ;ptp joint_pos_tgt
+   PTP XHOME
   
   ; Loop forever
   $advance = 0
   loop
     ; Get new command from buffer if present
-    elements_read = ros_eki_get(cmd_type_tgt, joint_pos_tgt, cart_pos_tgt, max_vel_scale_tgt)  
+    elements_read = ros_eki_get(cmd_type_tgt, XHOME, cart_pos_tgt, max_vel_scale_tgt)  
     $ov_pro = 100 * max_vel_scale_tgt
     switch cmd_type_tgt
     case 1
-      ptp joint_pos_tgt
+      ptp XHOME
     case 2
       ptp cart_pos_tgt
     case 3
       lin cart_pos_tgt
     case 4
-      ptp_rel joint_pos_tgt
+      ptp_rel XHOME
     case 5
       lin_rel cart_pos_tgt 
     endswitch
@@ -154,11 +158,11 @@ def ros_eki_state_send()
   $timer[2] = -10  ; ~10 ms for above send + 10 ms interrupt timer -> ~50 Hz state transmission
 end
 
-deffct int ros_eki_get(cmd_type_cmd :out, joint_pos_cmd :out, cart_pos_cmd :out, max_vel_scale_cmd :out)
+deffct int ros_eki_get(cmd_type_cmd :out, XHOMECOPY :out, cart_pos_cmd :out, max_vel_scale_cmd :out)
   decl eki_status eki_ret
   decl int cmd_type_cmd
   decl e6pos cart_pos_cmd
-  decl axis joint_pos_cmd
+  DECL E6AXIS XHOMECOPY
   decl real max_vel_scale_cmd
   
   if not $flag[1] then
@@ -172,12 +176,12 @@ deffct int ros_eki_get(cmd_type_cmd :out, joint_pos_cmd :out, cart_pos_cmd :out,
   
   eki_ret = eki_getint("ros_eki_motion", "RobotCommand/Type", cmd_type_cmd)
   
-  eki_ret = eki_getreal("ros_eki_motion", "RobotCommand/Axis/@A1", joint_pos_cmd.a1)
-  eki_ret = eki_getreal("ros_eki_motion", "RobotCommand/Axis/@A2", joint_pos_cmd.a2)
-  eki_ret = eki_getreal("ros_eki_motion", "RobotCommand/Axis/@A3", joint_pos_cmd.a3)
-  eki_ret = eki_getreal("ros_eki_motion", "RobotCommand/Axis/@A4", joint_pos_cmd.a4)
-  eki_ret = eki_getreal("ros_eki_motion", "RobotCommand/Axis/@A5", joint_pos_cmd.a5)
-  eki_ret = eki_getreal("ros_eki_motion", "RobotCommand/Axis/@A6", joint_pos_cmd.a6)
+  eki_ret = eki_getreal("ros_eki_motion", "RobotCommand/Axis/@A1", XHOMECOPY.a1)
+  eki_ret = eki_getreal("ros_eki_motion", "RobotCommand/Axis/@A2", XHOMECOPY.a2)
+  eki_ret = eki_getreal("ros_eki_motion", "RobotCommand/Axis/@A3", XHOMECOPY.a3)
+  eki_ret = eki_getreal("ros_eki_motion", "RobotCommand/Axis/@A4", XHOMECOPY.a4)
+  eki_ret = eki_getreal("ros_eki_motion", "RobotCommand/Axis/@A5", XHOMECOPY.a5)
+  eki_ret = eki_getreal("ros_eki_motion", "RobotCommand/Axis/@A6", XHOMECOPY.a6)
   
   eki_ret = eki_getreal("ros_eki_motion", "RobotCommand/Cart/@X", cart_pos_cmd.x)
   eki_ret = eki_getreal("ros_eki_motion", "RobotCommand/Cart/@Y", cart_pos_cmd.y)

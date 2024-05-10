@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from kuka_eki.eki import EkiStateClient
-
-eki_state_client = EkiStateClient("192.168.250.20")
+import time 
+eki_state_client = EkiStateClient("172.31.1.147")
 eki_state_client.connect()
 
 while True:
+    time.sleep(1.0)
     print(eki_state_client.state().pos)
     print(eki_state_client.state().axis)

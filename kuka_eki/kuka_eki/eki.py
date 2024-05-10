@@ -13,13 +13,13 @@
 # limitations under the License.
 
 from typing import Union
-from kuka_eki.krl import RobotCommand, RobotState
-from kuka_eki.tcp_client import TcpClient
-from kuka_eki.krl import Axis, Pos, CommandType
+from .krl import RobotCommand, RobotState
+from .tcp_client import TcpClient
+from .krl import Axis, Pos, CommandType
 
 
 class EkiMotionClient:
-    MOTION_PORT: int = 54600
+    MOTION_PORT: int = 54610
 
     def __init__(self, ip_address: str) -> None:
         self._tcp_client = TcpClient((ip_address, self.MOTION_PORT))
@@ -64,7 +64,7 @@ class EkiMotionClient:
 
 
 class EkiStateClient:
-    STATE_PORT: int = 54601
+    STATE_PORT: int = 54606
 
     def __init__(self, ip_address: str) -> None:
         self._tcp_client: TcpClient = TcpClient((ip_address, self.STATE_PORT))
@@ -74,4 +74,5 @@ class EkiStateClient:
 
     def state(self) -> RobotState:
         data: bytes = self._tcp_client.recv(1024)
+        print(data)
         return RobotState.from_xml(data)

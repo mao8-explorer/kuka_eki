@@ -6,8 +6,8 @@
         <INTERNAL>
             <ENVIRONMENT>Program</ENVIRONMENT>
             <ALIVE Set_Flag="2" />
-            <IP>192.168.250.16</IP>
-            <PORT>54601</PORT>
+            <IP>x.x.x.x</IP>
+            <PORT>54611</PORT>
             <PROTOCOL>TCP</PROTOCOL>
         </INTERNAL>
     </CONFIGURATION>
