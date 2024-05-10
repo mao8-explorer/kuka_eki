@@ -101,7 +101,7 @@ class CommandBuffersize:
     def from_xml(cls, xml: bytes):
         root: ET.Element = ET.fromstring(xml)
         attrib: dict[str, str] = root.find("RobotCommand").attrib
-        buffersize = attrib["Size"]
+        buffersize = int(attrib["Size"])
         return buffersize
 
 @dataclass
@@ -234,11 +234,16 @@ target_pos = Pos(1090.0, 1387.0, z_value, -40.0, 90.0, -93.0, e1 = e1_value)
 #         e1_value = 10.0
 
 max_buffersize_limit = 10
+target_axis = Axis(a1=a1_value, a2=-90.0, a3=90.0, a4=0.0, a5=0.0, a6=0.0, e1=e1_value)
+eki_motion_client.ptp(target_axis, 50)
+
 try:
     while eki_motion_client._is_running:
         # 发送指令
         target_axis = Axis(a1=a1_value, a2=-90.0, a3=90.0, a4=0.0, a5=0.0, a6=0.0, e1=e1_value)
-        if (eki_motion_client.ReadBufferSize() < max_buffersize_limit): 
+        cur_buffersize = eki_motion_client.ReadBufferSize()
+        if cur_buffersize < max_buffersize_limit: 
+            print("current_buffersize: ", cur_buffersize)
             eki_motion_client.ptp(target_axis, 50)
             if a1_value == -90.0:
                 a1_value = -70.0
@@ -246,7 +251,7 @@ try:
             else:
                 a1_value = -90
                 e1_value = 10.0
-            time.sleep(0.1)  # 示例延时
+            # time.sleep(0.1)  # 示例延时
 
             # if e1_value == 10.0:
             #     e1_value = 50.0
@@ -261,7 +266,9 @@ try:
             # else:
             #     z_value = 1910.0
             #     e1_value = 10.0
-            
+        # else:
+        #     print("eki_hw_iface RobotCommand buffer overflow (curent size "+ str(cur_buffersize) + \
+        #            " greater than or equal max allowed " + str(max_buffersize_limit) )
 
 except Exception as e:
     print(f"An error occurred: {e}")
