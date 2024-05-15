@@ -7,6 +7,10 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 import socket
 
+
+import math
+
+from traitlets import directional_link
 # 运动控制指令
 
 Address = Tuple[str, int]
@@ -201,79 +205,70 @@ def sigterm_handler(sig, frame):
 signal.signal(signal.SIGINT, sigint_handler)
 signal.signal(signal.SIGTERM, sigterm_handler)
 
-eki_motion_client = EkiMotionClient("172.31.1.147", 54605)
-eki_motion_client.connect()
 
-# 初始a1值
-e1_value = 10.0
-a1_value = -90.0
-z_value = 1910.0
-target_axis = Axis(a1=a1_value, a2=-90.0, a3=90.0, a4=0.0, a5=0.0, a6=0.0, e1 = e1_value)
 
-target_pos = Pos(1090.0, 1387.0, z_value, -40.0, 90.0, -93.0, e1 = e1_value)
-# a1z_value = 1910.0
 
-# while eki_motion_client._is_running:
-#     # 发送指令
-#     target_axis = Axis(a1=a1_value, a2=-90.0, a3=90.0, a4=0.0, a5=0.0, a6=0.0, e1 = e1_value)
-#     eki_motion_client.ptp(target_axis, 30)
-#     if a1_value == -90.0:
-#         a1_value = -70.0
-#         e1_value = 50.0
-#     else:
-#         a1_value = -90
-#         e1_value = 10.0
-#
-#     target_pos = Pos(1090.0, 1387.0, z_value, -40.0, 90.0, -93.0, e1 = e1_value)
-#     eki_motion_client.ptp(target_pos, 30)
-#     if z_value == 1910.0:
-#         z_value = 1200.0
-#         e1_value = 50.0
-#     else:
-#         z_value = 1910.0
-#         e1_value = 10.0
+if __name__ == "__main__":
 
-max_buffersize_limit = 10
-target_axis = Axis(a1=a1_value, a2=-90.0, a3=90.0, a4=0.0, a5=0.0, a6=0.0, e1=e1_value)
-eki_motion_client.ptp(target_axis, 50)
+    eki_motion_client = EkiMotionClient("172.31.1.147", 54605)
+    eki_motion_client.connect()
+    
+    
+    max_buffersize_limit = 10 # by default, limit command buffer to 5 (size of advance run in KRL)
+    target_axis = Axis(a1=-90, a2=-90.0, a3=90, a4=0.0, a5=0.0, a6=0.0, e1 = 20)
+    target_pos = Pos(1090.0, 1387.0, 1910.0, -40.0, 90.0, -93.0, e1 = 20)
 
-try:
-    while eki_motion_client._is_running:
-        # 发送指令
-        target_axis = Axis(a1=a1_value, a2=-90.0, a3=90.0, a4=0.0, a5=0.0, a6=0.0, e1=e1_value)
-        cur_buffersize = eki_motion_client.ReadBufferSize()
-        if cur_buffersize < max_buffersize_limit: 
-            print("current_buffersize: ", cur_buffersize)
-            eki_motion_client.ptp(target_axis, 50)
-            if a1_value == -90.0:
-                a1_value = -70.0
-                e1_value = 50.0
-            else:
-                a1_value = -90
-                e1_value = 10.0
-            # time.sleep(0.1)  # 示例延时
+    eki_motion_client.ptp(target_pos, 50)
 
-            # if e1_value == 10.0:
-            #     e1_value = 50.0
-            # else:
-            #     e1_value = 10.0
+    # Define circle parameters
+    circle_radius = 500  # radius of the circle
+    circle_center = (1090.0, 1387.0)  # center coordinates of the circle
+    num_points = 30  # number of points to divide the circle
+    angle_increment = 2 * math.pi / num_points  # angle increment for each point
 
-            # target_pos = Pos(1090.0, 1387.0,z_value, -40.0, 90.0, -93.0, e1=e1_value)
-            # eki_motion_client.ptp(target_pos, 50)
-            # if z_value == 1910.0:
-            #     z_value = 1200.0
-            #     e1_value = 50.0
-            # else:
-            #     z_value = 1910.0
-            #     e1_value = 10.0
-        # else:
-        #     print("eki_hw_iface RobotCommand buffer overflow (curent size "+ str(cur_buffersize) + \
-        #            " greater than or equal max allowed " + str(max_buffersize_limit) )
+    # Initialize angle and initial e1_value
+    current_angle = 0
+    e1_value = 20  # initial value for e1 axis
 
-except Exception as e:
-    print(f"An error occurred: {e}")
-    eki_motion_client.close()
+    # e1 parameters
+    e1_step = 8.0
+    e1_direction = 1.0
+    e1_lower_limit = 20.0
+    e1_upper_limit = 50.0
 
-finally:
-    # 确保无论发生什么，都关闭客户端
-    eki_motion_client.close()
+    try:
+        while eki_motion_client._is_running:
+            cur_buffersize = eki_motion_client.ReadBufferSize()
+            if cur_buffersize < max_buffersize_limit: 
+                print("current buffer size: ", cur_buffersize)
+                # Calculate target position based on current angle
+                x = circle_center[0] + circle_radius * math.cos(current_angle)
+                y = circle_center[1] + circle_radius * math.sin(current_angle)
+
+                # Create Pos object with constant z-value, calculated x, y values, and e1 axis value
+                target_pos = Pos(x, y, 1910.0, -40.0, 90.0, -93.0, e1=e1_value)
+                # Perform point-to-point motion to target position
+                eki_motion_client.ptp(target_pos, 50)
+
+                # Increment angle for next iteration
+                current_angle += angle_increment
+                if current_angle >= 2 * math.pi:
+                    current_angle -= 2 * math.pi
+
+                if(e1_value > e1_upper_limit):
+                    e1_direction = -1
+                if(e1_value < e1_lower_limit):
+                    e1_direction = 1
+    
+                e1_value +=  e1_step * e1_direction
+
+
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        eki_motion_client.close()
+
+    finally:
+        # Close the motion client
+        eki_motion_client.close()
+
