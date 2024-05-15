@@ -10,6 +10,7 @@ import sys
 import rospy
 from sensor_msgs.msg import JointState
 import numpy as np
+from sqlalchemy import true
 
 
 # 状态接收指令
@@ -191,8 +192,8 @@ if __name__ == "__main__":
 
     # ros-related 
     name = 'kuka_eki_state_publisher'
-    rospy.init_node(name)
-    joint_state_pub = rospy.Publisher('joint_states', JointState, queue_size=10)
+    rospy.init_node(name)  # 添加 anonymous=True 参数
+    joint_state_pub = rospy.Publisher('~joint_states', JointState, queue_size=10)
     joint_state = JointState()
     joint_state.name = [
         'joint_a1',

@@ -216,22 +216,22 @@ if __name__ == "__main__":
     
     max_buffersize_limit = 10 # by default, limit command buffer to 5 (size of advance run in KRL)
     target_axis = Axis(a1=-90, a2=-90.0, a3=90, a4=0.0, a5=0.0, a6=0.0, e1 = 20)
-    target_pos = Pos(1090.0, 1387.0, 1910.0, -40.0, 90.0, -93.0, e1 = 20)
+    target_pos = Pos(10.0, 1765.0, 1910.0, -40.0, 90.0, -93.0, e1 = 20)
 
     eki_motion_client.ptp(target_pos, 50)
 
     # Define circle parameters
     circle_radius = 500  # radius of the circle
-    circle_center = (1090.0, 1387.0)  # center coordinates of the circle
-    num_points = 30  # number of points to divide the circle
+    circle_center = (0.0, 1765.0)  # center coordinates of the circle
+    num_points = 4  # number of points to divide the circle
     angle_increment = 2 * math.pi / num_points  # angle increment for each point
 
     # Initialize angle and initial e1_value
     current_angle = 0
-    e1_value = 20  # initial value for e1 axis
+    e1_value = 10  # initial value for e1 axis
 
     # e1 parameters
-    e1_step = 8.0
+    e1_step = 10.0
     e1_direction = 1.0
     e1_lower_limit = 20.0
     e1_upper_limit = 50.0
