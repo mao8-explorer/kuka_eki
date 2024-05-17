@@ -2,13 +2,11 @@ import signal
 import sys
 import rospy
 from sensor_msgs.msg import JointState
-from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import PoseStamped
 import numpy as np
-from sqlalchemy import true
-
 from EkiConfig import EkiStateClient
+from EkiConfig import xyzabc_in_mm_deg_to_pose
 import socket
-
 
 def sigint_handler(sig, frame):
     global eki_state_client
@@ -42,7 +40,7 @@ if __name__ == "__main__":
     name = 'kuka_eki_state_publisher'
     rospy.init_node(name)  # 添加 anonymous=True 参数
     joint_state_pub = rospy.Publisher('~joint_states', JointState, queue_size=10)
-    ee_pose_pub = rospy.Publisher('~ee_pose', PointStamped, queue_size=10)
+    robot_state_pub = rospy.Publisher('~robot_state', PoseStamped, queue_size=10)
 
     joint_state = JointState()
     joint_state.name = [
@@ -53,6 +51,10 @@ if __name__ == "__main__":
         'joint_a5',
         'joint_a6',
         'joint_a7']
+    
+    pose_stamped = PoseStamped()
+    pose_stamped.header.frame_id = 'base_link'
+
     while eki_state_client._is_running and not rospy.is_shutdown():
         # time.sleep(1.0)
         state = eki_state_client.state()
@@ -82,14 +84,16 @@ if __name__ == "__main__":
 
 
             # 真机末端距离发布 EE_pose
-            ee_pose = PointStamped()
-            ee_pose.header.stamp = now
-            ee_pose.header.frame_id = "base_link"
-            ee_pose.point.x = float(state.pos.x)/1000.0
-            ee_pose.point.y = float(state.pos.y)/1000.0
-            ee_pose.point.z = float(state.pos.z)/1000.0
+            pose_stamped.header.stamp = now
+            pose_stamped.pose = xyzabc_in_mm_deg_to_pose([
+                float(state.pos.x),
+                float(state.pos.y),
+                float(state.pos.z),
+                float(state.pos.a),
+                float(state.pos.b),
+                float(state.pos.c)])
 
-            ee_pose_pub.publish(ee_pose)
+            robot_state_pub.publish(pose_stamped)
 
 
 

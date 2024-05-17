@@ -41,12 +41,18 @@ if __name__ == "__main__":
     # Define circle parameters
     circle_radius = 500  # radius of the circle
     circle_center = (0.0, 1765.0)  # center coordinates of the circle
-    num_points = 4  # number of points to divide the circle
+    num_points = 5  # number of points to divide the circle
     angle_increment = 2 * math.pi / num_points  # angle increment for each point
 
     # Initialize angle and initial e1_value
     current_angle = 0
     e1_value = 10  # initial value for e1 axis
+
+    # 确定ee_tools 与 ee_pose的固定坐标变换关系
+    init_el_value = 35 # ee_tools相对于 ee_pose的初始外部轴offset
+    target_pos = Pos(10.0, 1765.0, 1910.0, -40.0, 90.0, -93.0, e1 = 20)
+    eki_motion_client.ptp(target_pos, 50)
+
 
     # e1 parameters
     e1_step = 10.0

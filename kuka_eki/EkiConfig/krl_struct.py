@@ -61,6 +61,9 @@ class Pos:
         )
         return element
 
+    def __iter__(self):
+        return iter((self.x, self.y, self.z, self.a, self.b, self.c))
+    
 
 
 
