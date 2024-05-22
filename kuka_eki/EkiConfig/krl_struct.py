@@ -25,7 +25,7 @@ class Axis:
                 "A4": str(self.a4),
                 "A5": str(self.a5),
                 "A6": str(self.a6),
-                "E1": str(self.e1),
+                # "E1": str(self.e1),
             },
         )
         return element
@@ -56,7 +56,7 @@ class Pos:
                 "C": str(self.c),
                 # "S": str(self.s),
                 # "T": str(self.t),
-                "E1": str(self.e1),
+                # "E1": str(self.e1),
             },
         )
         return element
@@ -65,6 +65,20 @@ class Pos:
         return iter((self.x, self.y, self.z, self.a, self.b, self.c))
     
 
+@dataclass
+class AxisE1:
+    e1: float = 0.0
+
+    def to_xml(self, root: ET.Element) -> ET.Element:
+        element = ET.SubElement(
+            root,
+            "Axis",
+            {
+                "E1": str(self.e1),
+            },
+        )
+        return element
+    
 
 
 @dataclass
@@ -133,5 +147,14 @@ class RobotCommand:
         self.target.to_xml(root)
         Pos().to_xml(root) if isinstance(self.target, Axis) else Axis().to_xml(root)
         ET.SubElement(root, "Velocity").text = str(self.velocity_scaling)
+        return ET.tostring(root)
+    
+@dataclass
+class E1RobotCommand:
+    target: AxisE1
+
+    def to_xml(self) -> bytes:
+        root = ET.Element("RobotCommand")
+        self.target.to_xml(root)
         return ET.tostring(root)
     

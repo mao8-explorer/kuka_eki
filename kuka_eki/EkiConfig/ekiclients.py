@@ -1,6 +1,6 @@
-from .krl_struct import Axis, Pos
+from .krl_struct import Axis, Pos, AxisE1
 from .krl_struct import RobotState
-from .krl_struct import CommandType, CommandBuffersize, RobotCommand
+from .krl_struct import CommandType, CommandBuffersize, RobotCommand, E1RobotCommand
 from .tcpclient import TcpClient
 import socket
 from typing import Tuple, Union
@@ -11,7 +11,7 @@ class EkiMotionClient:
     #     self._tcp_client = TcpClient((ip_address, MOTION_PORT))
     #     self._is_running = True
 
-    def __init__(self, ip_address: str, MOTION_PORT: int = 54610) -> None:
+    def __init__(self, ip_address: str, MOTION_PORT: int = 54605) -> None:
         self._tcp_client = TcpClient((ip_address, MOTION_PORT))
         self._is_running = True  # 添加这个属性
 
@@ -38,6 +38,18 @@ class EkiMotionClient:
             raise TypeError("Expected argument of type Axis or Pos")
         command: RobotCommand = RobotCommand(command_type, target, max_velocity_scaling)
         self._tcp_client.sendall(command.to_xml())
+
+    def asyptp(self, target: AxisE1) -> None:
+        if not self._is_running:
+            print("Client is not connected. Cannot send command.")
+            return
+
+        if not isinstance(target,AxisE1):
+            raise TypeError("Expected argument of type AxisE1")
+        
+        command: E1RobotCommand = E1RobotCommand(target)
+        self._tcp_client.sendall(command.to_xml())
+
 
     def ReadBufferSize(self):
         try:
