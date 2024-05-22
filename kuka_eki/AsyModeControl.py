@@ -72,6 +72,7 @@ def tf_to_pose():
 "异步模式下的串行程序测试 - PTP 与 ASYPTP"
 
 
+
 if __name__ == "__main__":
 
     eki_motion_client = EkiMotionClient("172.31.1.147", 54605)
@@ -101,7 +102,7 @@ if __name__ == "__main__":
     rospy.loginfo("EE TCP Config Successfully!")
 
 
-    TCP_target_pos = Pos(190.0, 2000.0, 1134.0, 90.0, 180.0, 0.0)
+    TCP_target_pos = Pos(700.0, 1500.0, 1134.0, 90.0, 180.0, 0.0)
     ##---------------->>>
     TCP_pose = xyzabc_in_mm_deg_to_pose([*TCP_target_pos])
 
@@ -120,8 +121,8 @@ if __name__ == "__main__":
 
     # Define circle parameters
     circle_radius = 500  # radius of the circle
-    circle_center = (190.0, 2000.0)  # center coordinates of the circle
-    num_points = 20  # number of points to divide the circle
+    circle_center = (700.0, 1500.0)  # center coordinates of the circle
+    num_points = 10  # number of points to divide the circle
     angle_increment = 2 * math.pi / num_points  # angle increment for each point
 
     # Initialize angle and initial e1_value
@@ -168,7 +169,7 @@ if __name__ == "__main__":
                 # # Perform point-to-point motion to target position
                 # eki_motion_client.ptp(target_pos, 50)
 
-                TCP_target_pos = Pos(x, 2000.0, 1134.0, 90.0, 180.0, 0.0)
+                TCP_target_pos = Pos(x, 1500.0, 1134.0, 90.0, 180.0, 0.0)
                 # 坐标系转换接口！！
                 ##---------------->>>
                 TCP_pose = xyzabc_in_mm_deg_to_pose([*TCP_target_pos])
@@ -182,7 +183,7 @@ if __name__ == "__main__":
                 xyzabc = pose_to_xyzabc_in_mm_deg(a6_pose) # shape = (6,)
                 ## <<<----------------
                 # 调用运动控制客户端
-                eki_motion_client.ptp(Pos(*xyzabc),50)
+                eki_motion_client.ptp(Pos(*xyzabc),80)
 
                 # Increment angle for next iteration
                 current_angle += angle_increment
