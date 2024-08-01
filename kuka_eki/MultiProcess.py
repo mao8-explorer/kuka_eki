@@ -38,6 +38,8 @@ signal.signal(signal.SIGTERM, sigterm_handler)
 # Define the client function for E1_eki_motion_client
 def e1_client_process(e1_eki_motion_client):
 
+    rospy.init_node('e1_client_node', anonymous=True)
+    
     E1_max_buffersize_limit = 2 # by default, limit command buffer to 5 (size of advance run in KRL)
     rate = rospy.Rate(30)  # Adjust the rate as needed
 
@@ -77,7 +79,10 @@ def e1_client_process(e1_eki_motion_client):
 
 
 # Define the client function for eki_motion_client
-def eki_client_process(eki_motion_client, PoseCommand_pub):
+def eki_client_process(eki_motion_client):
+
+    rospy.init_node('eki_client_node', anonymous=True)
+    PoseCommand_pub = rospy.Publisher('PoseCommandClient', PoseStamped, queue_size=10)
 
     max_buffersize_limit = 5 # by default, limit command buffer to 5 (size of advance run in KRL)
     rate = rospy.Rate(100)  # Adjust the rate as needed
@@ -139,8 +144,6 @@ if __name__ == "__main__":
     E1_eki_motion_client.connect()
     
     rospy.init_node('multi_client_node')
-    PoseCommand_pub = rospy.Publisher('PoseCommandClient', PoseStamped, queue_size=10)
-
 
     # 初始位置确定
     init_el_value = 35.0 # ee_tools相对于 ee_pose的初始外部轴offset
@@ -161,7 +164,7 @@ if __name__ == "__main__":
 
     # Start the processes
     e1_process = multiprocessing.Process(target=e1_client_process, args=(E1_eki_motion_client,))
-    eki_process = multiprocessing.Process(target=eki_client_process, args=(eki_motion_client,PoseCommand_pub))
+    eki_process = multiprocessing.Process(target=eki_client_process, args=(eki_motion_client,))
     
     e1_process.start()
     eki_process.start()
