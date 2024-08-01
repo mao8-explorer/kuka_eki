@@ -65,6 +65,14 @@ class Pos:
         return iter((self.x, self.y, self.z, self.a, self.b, self.c))
     
 
+
+@dataclass
+class PosTgtServer:
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0
+    
+
 @dataclass
 class AxisE1:
     e1: float = 0.0
@@ -85,6 +93,7 @@ class AxisE1:
 class RobotState:
     axis: Axis = Axis()
     pos: Pos = Pos()
+    posTgtServer: PosTgtServer = PosTgtServer()
 
     @classmethod
     def from_xml(cls, xml: bytes):
@@ -110,7 +119,15 @@ class RobotState:
             attrib["A6"],
             attrib["E1"],
         )
-        return RobotState(axis, pos)
+        
+        attrib = root.find("PosTgt").attrib
+        posTgtServer = PosTgtServer(
+            attrib["X"],
+            attrib["Y"],
+            attrib["Z"],
+        )
+
+        return RobotState(axis, pos, posTgtServer) 
 
     def to_xml(self) -> bytes:
         root: ET.Element = ET.Element("RobotState")
@@ -156,5 +173,15 @@ class E1RobotCommand:
     def to_xml(self) -> bytes:
         root = ET.Element("RobotCommand")
         self.target.to_xml(root)
+        return ET.tostring(root)
+    
+
+@dataclass
+class SpeedCommand:
+    velocity_scaling: int
+
+    def to_xml(self) -> bytes:
+        root = ET.Element("RobotCommand")
+        ET.SubElement(root, "Velocity").text = str(self.velocity_scaling)
         return ET.tostring(root)
     

@@ -34,41 +34,6 @@ signal.signal(signal.SIGTERM, sigterm_handler)
 
 
 
-
-def tf_to_pose():
-    tf_listener = tf.TransformListener()
-    # pose_pub = rospy.Publisher('/tf_pose', PoseStamped, queue_size=10)
-    rate = rospy.Rate(100.0)
-
-    pose_received = False
-    while not rospy.is_shutdown() and not pose_received:
-        try:
-            (trans, rot) = tf_listener.lookupTransform('/joint_a7_Link', '/joint_a6_Link', rospy.Time(0))
-
-            pose = PoseStamped()
-            pose.header.stamp = rospy.Time.now()
-            pose.header.frame_id = 'joint_a7_Link'
-            pose.pose.position.x = trans[0]
-            pose.pose.position.y = trans[1]
-            pose.pose.position.z = trans[2]
-            pose.pose.orientation.x = rot[0]
-            pose.pose.orientation.y = rot[1]
-            pose.pose.orientation.z = rot[2]
-            pose.pose.orientation.w = rot[3]
-            # pose_pub.publish(pose)
-
-            # 设置标志为True，表示成功获取姿态信息
-            pose_received = True
-
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-            continue
-        rate.sleep()
-
-    """将Pose转换为4x4变换矩阵 - 工具坐标系 TCP"""
-    T_a6_to_a7 = pose_to_matrix(pose.pose)
-    return T_a6_to_a7
-
-
 "异步模式下的串行程序测试 - PTP 与 ASYPTP"
 
 
@@ -81,6 +46,9 @@ if __name__ == "__main__":
     E1_eki_motion_client = EkiMotionClient("172.31.1.147", 54607)
     E1_eki_motion_client.connect()
       
+    speedControl_client = EkiMotionClient("172.31.1.147", 54608)
+    speedControl_client.connect()
+
     rospy.init_node('PoseCommand_Client')
     rate = rospy.Rate(100)  # 10 Hz
     PoseCommand_pub = rospy.Publisher('PoseCommandClient', PoseStamped, queue_size=10)
@@ -88,49 +56,29 @@ if __name__ == "__main__":
     CommandVisual.header.frame_id = 'world'  # 参考坐标系
     
     max_buffersize_limit = 5 # by default, limit command buffer to 5 (size of advance run in KRL)
-    E1_max_buffersize_limit = 3 # by default, limit command buffer to 5 (size of advance run in KRL)
+    E1_max_buffersize_limit = 1 # by default, limit command buffer to 5 (size of advance run in KRL)
 
-    # 确定ee_tools 与 ee_pose的固定坐标变换关系
+
+    # 初始位置确定
     init_el_value = 35.0 # ee_tools相对于 ee_pose的初始外部轴offset
     el_handle = AxisE1(e1 = init_el_value)
-    target_pos = Pos(10.0, 1765.0, 1910.0, -40.0, 90.0, -93.0)
-    eki_motion_client.ptp(target_pos, 50)
+
+    TCP_target_pos = Pos(1300.0, 1900.0, 1280.0, -125.0, 0.0, 180.0)
+    eki_motion_client.ptp(TCP_target_pos, 50)
     E1_eki_motion_client.asyptp(el_handle)
     
     # 定初始位置 确定末端TCP (约向下10cm)
     for i in range(5):
-        eki_motion_client.ptp(target_pos, 50)
+        eki_motion_client.ptp(TCP_target_pos, 50)
     while eki_motion_client._is_running:
         rate.sleep()
         cur_buffersize = eki_motion_client.ReadBufferSize()
         if cur_buffersize == 0:
             break
 
-
-    T_a6_to_a7 = tf_to_pose() # TCP工具坐标系 get from rviz - based on URDF (Trust!)
-    rospy.loginfo("EE TCP Config Successfully!")
-
-
-    TCP_target_pos = Pos(700.0, 1500.0, 1134.0, 90.0, 180.0, 0.0)
-    ##---------------->>>
-    TCP_pose = xyzabc_in_mm_deg_to_pose([*TCP_target_pos])
-
-    # 计算从工具坐标系->机械臂末端->基坐标系的变换矩阵
-    T_a7_to_base = pose_to_matrix(TCP_pose)
-    T_a6_to_base = np.dot(T_a7_to_base, T_a6_to_a7)
-
-    # 转换回 Pose 对象并转换为 xyzabc 格式
-    a6_pose = matrix_to_pose(T_a6_to_base)
-    xyzabc = pose_to_xyzabc_in_mm_deg(a6_pose) # shape = (6,)
-    ## <<<----------------
-
-    # 调用运动控制客户端
-    eki_motion_client.ptp(Pos(*xyzabc),50)
-    E1_eki_motion_client.asyptp(el_handle)
-
     # Define circle parameters
     circle_radius = 500  # radius of the circle
-    circle_center = (700.0, 1500.0)  # center coordinates of the circle
+    circle_center = (1300.0, 1900.0)  # center coordinates of the circle
     num_points = 100 # number of points to divide the circle
     angle_increment = 2 * math.pi / num_points  # angle increment for each point
 
@@ -139,7 +87,7 @@ if __name__ == "__main__":
     e1_value = 30.0  # initial value for e1 axis
 
     # e1 parameters
-    e1_step = 10.0
+    e1_step = 5.0
     e1_direction = 1.0
     e1_lower_limit = 20.0
     e1_upper_limit = 50.0
@@ -147,9 +95,24 @@ if __name__ == "__main__":
     rx = 10.0
 
 
+    # speed parameters
+    vel_scale = 10 # 0~100
+
+
+
     try:
         while eki_motion_client._is_running and E1_eki_motion_client._is_running:
-            cur_buffersize = eki_motion_client.ReadBufferSize()
+
+            speed_cur_buffersize = speedControl_client.ReadBufferSize()
+
+            # speed Control
+            if speed_cur_buffersize is not None and speed_cur_buffersize < max_buffersize_limit:
+                
+                speedControl_client.speedSend()
+
+            
+            rate.sleep() # 延时以频率统一  
+
             E1_cur_buffersize = E1_eki_motion_client.ReadBufferSize()
 
             # E1 移动
@@ -165,7 +128,8 @@ if __name__ == "__main__":
     
                 e1_value +=  e1_step * e1_direction
             
-            rospy.loginfo("Current buffer: {}, E1 buffer: {}".format(cur_buffersize, E1_cur_buffersize))
+            rate.sleep() # 延时以频率统一  
+            cur_buffersize = eki_motion_client.ReadBufferSize()
 
             # Axis 1~6 + (X Y Z A B C)
             if  cur_buffersize is not None and cur_buffersize < max_buffersize_limit: 
@@ -173,30 +137,15 @@ if __name__ == "__main__":
                 x = circle_center[0] + circle_radius * math.cos(current_angle)
                 y = circle_center[1] + circle_radius * math.sin(current_angle)
 
-                # Create Pos object with constant z-value, calculated x, y values, and e1 axis value
-                # target_pos = Pos(x,y, 1910.0, -40.0, 90.0, -93.0, e1=e1_value)
-                # # Perform point-to-point motion to target position
-                # eki_motion_client.ptp(target_pos, 50)
+                TCP_target_pos = Pos(x, y, 1280.0, -125.0, 0.0, 180.0)
 
-                TCP_target_pos = Pos(x, y, 1134.0, 90.0, 180.0, rx)
-                # 坐标系转换接口！！
-                ##---------------->>>
-                TCP_pose = xyzabc_in_mm_deg_to_pose([*TCP_target_pos])
-
-                # 计算从工具坐标系->机械臂末端->基坐标系的变换矩阵
-                T_a7_to_base = pose_to_matrix(TCP_pose)
-                T_a6_to_base = np.dot(T_a7_to_base, T_a6_to_a7)
-
-                # 转换回 Pose 对象并转换为 xyzabc 格式
-                a6_pose = matrix_to_pose(T_a6_to_base)
-                xyzabc = pose_to_xyzabc_in_mm_deg(a6_pose) # shape = (6,)
-                ## <<<----------------
                 # 调用运动控制客户端
-                eki_motion_client.ptp(Pos(*xyzabc),80)
+                eki_motion_client.ptp(TCP_target_pos, 80)
 
                 # 发布位姿命令可视化
+                TCP_pose = xyzabc_in_mm_deg_to_pose([*TCP_target_pos])
                 CommandVisual.header.stamp = rospy.Time.now()
-                CommandVisual.pose = a6_pose
+                CommandVisual.pose = TCP_pose
                 PoseCommand_pub.publish(CommandVisual)
 
                 # Increment angle for next iteration
@@ -209,8 +158,8 @@ if __name__ == "__main__":
                 else:
                     rx = 10.0
 
-
-                rate.sleep() # 延时以频率统一
+            rospy.loginfo("Current buffer: {}, E1 buffer: {}".format(cur_buffersize, E1_cur_buffersize))
+            rate.sleep() # 延时以频率统一  
 
 
 

@@ -4,7 +4,7 @@ import socket
 # 状态接收指令
 Address = Tuple[str, int]
 class TcpClient:
-    def __init__(self, address: Address, timeout: int = 5):
+    def __init__(self, address: Address, timeout: int = 0.1):
         self._address: Address = address
         self._timeout = timeout
         self._socket: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

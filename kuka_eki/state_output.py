@@ -41,6 +41,7 @@ if __name__ == "__main__":
     rospy.init_node(name)  # 添加 anonymous=True 参数
     joint_state_pub = rospy.Publisher('~joint_states', JointState, queue_size=10)
     robot_state_pub = rospy.Publisher('~robot_state', PoseStamped, queue_size=10)
+    PoseCommandServer_pub = rospy.Publisher('~PoseCommandServer', PoseStamped, queue_size=10)
 
     joint_state = JointState()
     joint_state.name = [
@@ -94,6 +95,18 @@ if __name__ == "__main__":
                 float(state.pos.c)])
 
             robot_state_pub.publish(pose_stamped)
+
+
+            # KUKA服务端接收到的目标更新点位
+            pose_stamped.pose = xyzabc_in_mm_deg_to_pose([
+                float(state.posTgtServer.x),
+                float(state.posTgtServer.y),
+                float(state.posTgtServer.z),
+                float(state.pos.a),
+                float(state.pos.b),
+                float(state.pos.c)])
+
+            PoseCommandServer_pub.publish(pose_stamped)
 
 
 
