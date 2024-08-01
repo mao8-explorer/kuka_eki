@@ -108,7 +108,7 @@ if __name__ == "__main__":
             # speed Control
             if speed_cur_buffersize is not None and speed_cur_buffersize < max_buffersize_limit:
                 
-                speedControl_client.speedSend()
+                speedControl_client.speedSend(vel_scale) # 速度变化范围是 0 ~100  int 类型
 
             
             rate.sleep() # 延时以频率统一  
