@@ -13,7 +13,7 @@ import time
 
 # Global variables
 target_index = 0
-sigma = 50.0  # 距离阈值
+sigma = 50.0  # 距离阈值 mm
 
 # Define the target set to avoid redundancy
 common_orientation = (-125.0, 0.0, 180.0)
@@ -21,7 +21,7 @@ target_set = [
     Pos(800.0, 1900.0, 1280.0, *common_orientation),
     Pos(1800.0, 1900.0, 1280.0, *common_orientation)
 ]
-TCP_target_pos = Pos(800.0, 1900.0, 1280.0, *common_orientation)
+TCP_target_pos = target_set[0]
 
 max_buffersize_limit = 5
 E1_max_buffersize_limit = 1
@@ -96,14 +96,6 @@ if __name__ == "__main__":
     speedControl_client = EkiMotionClient("172.31.1.147", 54608)
     speedControl_client.connect()
 
-    rospy.init_node('PoseCommand_Client')
-    rate = rospy.Rate(50) 
-    PoseCommand_pub = rospy.Publisher('PoseCommandClient', PoseStamped, queue_size=10)
-    # 回调机制，订阅当前机械臂末端状态，更新下发控制点位
-    rospy.Subscriber("kuka_eki_state_publisher/robot_state", PoseStamped, robot_state_callback)
-    CommandVisual = PoseStamped()
-    CommandVisual.header.frame_id = 'world'  # 参考坐标系
-
     # 初始位姿矫正设计！Begin
     init_el_value = 35.0
     el_handle = AxisE1(e1=init_el_value)
@@ -114,11 +106,21 @@ if __name__ == "__main__":
     for i in range(5):
         eki_motion_client.ptp(TCP_target_pos, 50)
     while eki_motion_client._is_running:
-        rate.sleep()
+        time.sleep(0.01)
         cur_buffersize = eki_motion_client.ReadBufferSize()
         if cur_buffersize == 0:
             break
     # 初始位姿矫正设计！End
+
+    # 程序启动！
+    rospy.init_node('PoseCommand_Client')
+    rate = rospy.Rate(50) 
+    PoseCommand_pub = rospy.Publisher('PoseCommandClient', PoseStamped, queue_size=10)
+    # 回调机制，订阅当前机械臂末端状态，更新下发控制点位
+    rospy.Subscriber("kuka_eki_state_publisher/robot_state", PoseStamped, robot_state_callback)
+    CommandVisual = PoseStamped()
+    CommandVisual.header.frame_id = 'world'  # 参考坐标系
+
 
     e1_value = 30.0
     e1_step = 5.0
