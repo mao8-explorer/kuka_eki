@@ -97,16 +97,16 @@ if __name__ == "__main__":
             robot_state_pub.publish(pose_stamped)
 
 
-            # KUKA服务端接收到的目标更新点位
-            pose_stamped.pose = xyzabc_in_mm_deg_to_pose([
-                float(state.posTgtServer.x),
-                float(state.posTgtServer.y),
-                float(state.posTgtServer.z),
-                float(state.pos.a),
-                float(state.pos.b),
-                float(state.pos.c)])
+            # # KUKA服务端接收到的目标更新点位
+            # pose_stamped.pose = xyzabc_in_mm_deg_to_pose([
+            #     float(state.posTgtServer.x),
+            #     float(state.posTgtServer.y),
+            #     float(state.posTgtServer.z),
+            #     float(state.pos.a),
+            #     float(state.pos.b),
+            #     float(state.pos.c)])
 
-            PoseCommandServer_pub.publish(pose_stamped)
+            # PoseCommandServer_pub.publish(pose_stamped)
 
 
 

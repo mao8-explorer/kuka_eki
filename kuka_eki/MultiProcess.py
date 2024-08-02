@@ -38,10 +38,10 @@ signal.signal(signal.SIGTERM, sigterm_handler)
 # Define the client function for E1_eki_motion_client
 def e1_client_process(e1_eki_motion_client):
 
-    rospy.init_node('e1_client_node', anonymous=True)
+    # rospy.init_node('e1_client_node', anonymous=True)
     
     E1_max_buffersize_limit = 2 # by default, limit command buffer to 5 (size of advance run in KRL)
-    rate = rospy.Rate(30)  # Adjust the rate as needed
+    rate = rospy.Rate(100)  # Adjust the rate as needed
 
     e1_value = 30.0
     e1_step = 5.0
@@ -81,16 +81,16 @@ def e1_client_process(e1_eki_motion_client):
 # Define the client function for eki_motion_client
 def eki_client_process(eki_motion_client):
 
-    rospy.init_node('eki_client_node', anonymous=True)
-    PoseCommand_pub = rospy.Publisher('PoseCommandClient', PoseStamped, queue_size=10)
+    # rospy.init_node('eki_client_node', anonymous=True)
+    # PoseCommand_pub = rospy.Publisher('PoseCommandClient', PoseStamped, queue_size=10)
 
     max_buffersize_limit = 5 # by default, limit command buffer to 5 (size of advance run in KRL)
-    rate = rospy.Rate(100)  # Adjust the rate as needed
+    rate = rospy.Rate(50)  # Adjust the rate as needed
 
     # Define circle parameters
-    circle_radius = 500  # radius of the circle
+    circle_radius = 300  # radius of the circle
     circle_center = (1300.0, 1900.0)  # center coordinates of the circle
-    num_points = 100 # number of points to divide the circle
+    num_points = 20 # number of points to divide the circle
     angle_increment = 2 * math.pi / num_points  # angle increment for each point
     current_angle = 0
     rx = 10.0
@@ -106,13 +106,13 @@ def eki_client_process(eki_motion_client):
                 x = circle_center[0] + circle_radius * math.cos(current_angle)
                 y = circle_center[1] + circle_radius * math.sin(current_angle)
 
-                TCP_target_pos = Pos(x, y, 1280.0, -125.0, 0.0, 180.0)
-                eki_motion_client.ptp(TCP_target_pos, 80)
+                TCP_target_pos = Pos(x, circle_center[1], 1280.0, -125.0, 0.0, 180.0)
+                eki_motion_client.ptp(TCP_target_pos, 100)
 
-                TCP_pose = xyzabc_in_mm_deg_to_pose([*TCP_target_pos])
-                CommandVisual.header.stamp = rospy.Time.now()
-                CommandVisual.pose = TCP_pose
-                PoseCommand_pub.publish(CommandVisual)
+                # TCP_pose = xyzabc_in_mm_deg_to_pose([*TCP_target_pos])
+                # CommandVisual.header.stamp = rospy.Time.now()
+                # CommandVisual.pose = TCP_pose
+                # PoseCommand_pub.publish(CommandVisual)
 
                 current_angle += angle_increment
                 if current_angle >= 2 * math.pi:
@@ -134,6 +134,7 @@ def eki_client_process(eki_motion_client):
         # Close the motion client
         eki_motion_client.close()
 
+# 配合 ptp_loop_todo 实现 末端画圆
 
 if __name__ == "__main__":
 
@@ -160,7 +161,6 @@ if __name__ == "__main__":
         cur_buffersize = eki_motion_client.ReadBufferSize()
         if cur_buffersize == 0:
             break
-
 
     # Start the processes
     e1_process = multiprocessing.Process(target=e1_client_process, args=(E1_eki_motion_client,))

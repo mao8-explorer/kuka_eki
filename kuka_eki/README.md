@@ -11,4 +11,7 @@ EkiStateClient("172.31.1.147",54606)
 
 
 # 运行实现
--
+
+
+## 多重更新 
+    1. toolKUKAMoveLR.py, 
